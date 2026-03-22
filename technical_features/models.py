@@ -16,21 +16,23 @@ class TechnicalFeatureDaily(models.Model):
 
     # Momentum
     rsi_14 = models.FloatField(null=True, blank=True)
+    rsi_change = models.FloatField(null=True, blank=True)
 
     # Volatility / Risk
     atr_14 = models.FloatField(null=True, blank=True)
     volatility_14 = models.FloatField(null=True, blank=True)
+    volatility_ratio = models.FloatField(null=True, blank=True)
+
+    # Returns
+    return_5 = models.FloatField(null=True, blank=True)
+    return_10 = models.FloatField(null=True, blank=True)
 
     # Trend
-    # (Supertrend removed)
-
-    # Volume
-    volume_zscore_20 = models.FloatField(null=True, blank=True)
-    volume_ratio = models.FloatField(null=True, blank=True)
-
-    # Moving Averages
-    ema20_distance = models.FloatField(null=True, blank=True)
     ema50_distance = models.FloatField(null=True, blank=True)
+    trend_ratio = models.FloatField(null=True, blank=True)
+
+    # Price Range
+    range_10 = models.FloatField(null=True, blank=True)
 
     # Bollinger Bands
     bollinger_position = models.FloatField(null=True, blank=True)

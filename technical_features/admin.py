@@ -8,12 +8,15 @@ class TechnicalFeatureDailyAdmin(admin.ModelAdmin):
         "stock",
         "trade_date",
         "rsi_14",
+        "rsi_change",
         "atr_14",
         "volatility_14",
-        "volume_zscore_20",
-        "volume_ratio",
-        "ema20_distance",
+        "volatility_ratio",
+        "return_5",
+        "return_10",
         "ema50_distance",
+        "trend_ratio",
+        "range_10",
         "bollinger_position",
     )
 

@@ -41,7 +41,8 @@ INSTALLED_APPS = [
 
     "rest_framework",
     "market_data",
-    "technical_features"
+    "technical_features",
+    "ml_dataset",
 ]
 
 MIDDLEWARE = [

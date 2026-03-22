@@ -125,46 +125,61 @@ class Command(BaseCommand):
         window_vol = 14
         volatility_14 = returns.rolling(window_vol).std()
 
-        # 8) Volume Z-score (20)
-        window_vol_z = 20
-        volume_mean = df["volume"].rolling(window_vol_z).mean()
-        volume_std = df["volume"].rolling(window_vol_z).std()
-        volume_zscore_20 = (df["volume"] - volume_mean) / volume_std
+        # 8) Rolling volatility (50) for volatility_ratio
+        volatility_50 = returns.rolling(50).std()
+        volatility_ratio = volatility_14 / volatility_50.replace(0, np.nan)
 
-        # 9) Volume Ratio
-        volume_sma_20 = df["volume"].rolling(20).mean()
-        volume_ratio = df["volume"] / volume_sma_20
+        # 9) Return over last 5 days
+        return_5 = df["close"].pct_change(periods=5)
 
-        # 10) EMA Trend Distances
+        # 10) Return over last 10 days
+        return_10 = df["close"].pct_change(periods=10)
+
+        # 11) EMA Trend Distances
         ema20 = df["close"].ewm(span=20, adjust=False).mean()
         ema50 = df["close"].ewm(span=50, adjust=False).mean()
-        ema20_distance = (df["close"] - ema20) / df["close"]
         ema50_distance = (df["close"] - ema50) / df["close"]
 
-        # 11) Bollinger Position
+        # 12) Trend ratio (ema20 / ema50)
+        trend_ratio = ema20 / ema50.replace(0, np.nan)
+
+        # 13) Range over last 10 days (highest high - lowest low)
+        range_10 = df["high"].rolling(10).max() - df["low"].rolling(10).min()
+
+        # 14) RSI change (current RSI - previous day RSI)
+        rsi_change = rsi_14.diff()
+
+        # 15) Bollinger Position
         bb_middle = df["close"].rolling(20).mean()
         bb_std = df["close"].rolling(20).std()
         bb_upper = bb_middle + (2 * bb_std)
         bb_lower = bb_middle - (2 * bb_std)
-        bollinger_position = (df["close"] - bb_lower) / (bb_upper - bb_lower)
+        bb_range = bb_upper - bb_lower
+        bollinger_position = (df["close"] - bb_lower) / bb_range.replace(0, np.nan)
 
         # Assemble final DataFrame
         features_df = pd.DataFrame(
             {
                 "trade_date": df["trade_date"],
                 "rsi_14": rsi_14,
+                "rsi_change": rsi_change,
                 "atr_14": atr_14,
                 "volatility_14": volatility_14,
-                "volume_zscore_20": volume_zscore_20,
-                "volume_ratio": volume_ratio,
-                "ema20_distance": ema20_distance,
+                "volatility_ratio": volatility_ratio,
+                "return_5": return_5,
+                "return_10": return_10,
                 "ema50_distance": ema50_distance,
+                "trend_ratio": trend_ratio,
+                "range_10": range_10,
                 "bollinger_position": bollinger_position,
             }
         )
 
         # Clean up infinities / NaNs
         features_df = features_df.replace([np.inf, -np.inf], np.nan)
+
+        # Full recompute per stock: remove existing rows so new values are recreated.
+        TechnicalFeatureDaily.objects.filter(stock=stock).delete()
 
         objects_to_create = []
 
@@ -175,12 +190,15 @@ class Command(BaseCommand):
                 stock=stock,
                 trade_date=trade_date,
                 rsi_14=_to_float_or_none(row.rsi_14),
+                rsi_change=_to_float_or_none(row.rsi_change),
                 atr_14=_to_float_or_none(row.atr_14),
                 volatility_14=_to_float_or_none(row.volatility_14),
-                volume_zscore_20=_to_float_or_none(row.volume_zscore_20),
-                volume_ratio=_to_float_or_none(row.volume_ratio),
-                ema20_distance=_to_float_or_none(row.ema20_distance),
+                volatility_ratio=_to_float_or_none(row.volatility_ratio),
+                return_5=_to_float_or_none(row.return_5),
+                return_10=_to_float_or_none(row.return_10),
                 ema50_distance=_to_float_or_none(row.ema50_distance),
+                trend_ratio=_to_float_or_none(row.trend_ratio),
+                range_10=_to_float_or_none(row.range_10),
                 bollinger_position=_to_float_or_none(row.bollinger_position),
             )
             objects_to_create.append(obj)
