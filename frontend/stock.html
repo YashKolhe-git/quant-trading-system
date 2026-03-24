@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Dashboard | ML Swing Trading Analytics</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-inner">
+      <a href="./index.html" class="brand">ML Swing Trading Analytics</a>
+      <nav class="menu">
+        <a href="./index.html" class="menu-link">Home</a>
+        <a href="./stock.html" class="menu-link active">Analyze</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="dashboard-header panel">
+      <h1 id="stockTitle">Stock: INFY.NS</h1>
+    </section>
+
+    <section class="panel prediction-panel">
+      <h2>Prediction</h2>
+      <p><strong>Symbol:</strong> <span id="symbol">-</span></p>
+      <p><strong>Date:</strong> <span id="date">-</span></p>
+      <p><strong>Probability:</strong> <span id="probability">-</span></p>
+      <p><strong>Signal strength:</strong> <span id="signal">-</span></p>
+    </section>
+
+    <section class="panel chart-panel">
+      <h2>Chart</h2>
+      <div id="chart">
+        <canvas id="priceChartCanvas"></canvas>
+      </div>
+    </section>
+
+    <section class="panel indicators-panel">
+      <h2>Indicators</h2>
+      <p><strong>RSI:</strong> <span id="rsi">-</span></p>
+      <p><strong>ATR:</strong> <span id="atr">-</span></p>
+      <p><strong>Volatility:</strong> <span id="volatility">-</span></p>
+      <p><strong>Trend ratio:</strong> <span id="trend">-</span></p>
+      <p><strong>EMA distance:</strong> <span id="ema">-</span></p>
+      <p><strong>Range:</strong> <span id="range">-</span></p>
+    </section>
+
+    <section class="panel features-panel">
+      <h2>Feature Explanation</h2>
+      <div id="features"></div>
+    </section>
+
+    <section class="panel news-panel">
+      <h2>News</h2>
+      <div id="news"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="./script.js"></script>
+</body>
+</html>
