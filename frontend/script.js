@@ -279,21 +279,26 @@ async function fetchChartData(symbol) {
 }
 
 async function fetchIndicators(symbol) {
-  const rsiEl = document.getElementById("rsi");
-  const atrEl = document.getElementById("atr");
-  const volatilityEl = document.getElementById("volatility");
-  const trendEl = document.getElementById("trend");
-  const emaEl = document.getElementById("ema");
-  const rangeEl = document.getElementById("range");
-
+  const indicatorMap = {
+    rsi_14: "rsi",
+    atr_14: "atr",
+    volatility_14: "volatility",
+    volatility_ratio: "volatilityRatio",
+    return_10: "return10",
+    ema50_distance: "ema",
+    trend_ratio: "trend",
+    range_10: "range",
+  };
+  const indicatorElements = {};
   const missingIds = [];
-  if (!rsiEl) missingIds.push("rsi");
-  if (!atrEl) missingIds.push("atr");
-  if (!volatilityEl) missingIds.push("volatility");
-  if (!trendEl) missingIds.push("trend");
-  if (!emaEl) missingIds.push("ema");
-  if (!rangeEl) missingIds.push("range");
-  if (missingIds.length) {
+  Object.values(indicatorMap).forEach((id) => {
+    const el = document.getElementById(id);
+    indicatorElements[id] = el;
+    if (!el) {
+      missingIds.push(id);
+    }
+  });
+  if (missingIds.length > 0) {
     console.warn("[fetchIndicators] Missing indicator elements:", missingIds);
   }
 
@@ -310,29 +315,189 @@ async function fetchIndicators(symbol) {
     console.log("[fetchIndicators] Available keys:", Object.keys(data));
 
     const fmt = (value) => (Number.isFinite(Number(value)) ? Number(value).toFixed(4) : "-");
-    const setIndicator = (el, key) => {
+    Object.entries(indicatorMap).forEach(([apiKey, spanId]) => {
+      const el = indicatorElements[spanId];
       if (!el) return;
-      const hasKey = Object.prototype.hasOwnProperty.call(data, key);
-      const rawValue = hasKey ? data[key] : null;
+      const hasKey = Object.prototype.hasOwnProperty.call(data, apiKey);
+      const rawValue = hasKey ? data[apiKey] : null;
       el.textContent = fmt(rawValue);
-      console.log(`[fetchIndicators] ${key} ->`, rawValue, "rendered as", el.textContent);
-    };
+      console.log(`[fetchIndicators] ${apiKey} ->`, rawValue, "rendered as", el.textContent);
+    });
 
-    // Use exact backend response keys
-    setIndicator(rsiEl, "rsi_14");
-    setIndicator(atrEl, "atr_14");
-    setIndicator(volatilityEl, "volatility_14");
-    setIndicator(trendEl, "trend_ratio");
-    setIndicator(emaEl, "ema50_distance");
-    setIndicator(rangeEl, "range_10");
+    generateFeatureExplanation(data);
   } catch (error) {
     console.error("[fetchIndicators] Request failed:", error);
-    if (rsiEl) rsiEl.textContent = "-";
-    if (atrEl) atrEl.textContent = "-";
-    if (volatilityEl) volatilityEl.textContent = "-";
-    if (trendEl) trendEl.textContent = "-";
-    if (emaEl) emaEl.textContent = "-";
-    if (rangeEl) rangeEl.textContent = "-";
+    Object.values(indicatorElements).forEach((el) => {
+      if (el) el.textContent = "-";
+    });
+    generateFeatureExplanation(null);
+  }
+}
+
+function generateFeatureExplanation(indicators) {
+  const featuresEl = document.getElementById("features");
+  if (!featuresEl) return;
+
+  if (!indicators || typeof indicators !== "object") {
+    featuresEl.innerHTML = `<div class="muted">Feature explanation unavailable.</div>`;
+    return;
+  }
+
+  const rsi = Number(indicators.rsi_14);
+  const trendRatio = Number(indicators.trend_ratio);
+  const emaDistance = Number(indicators.ema50_distance);
+  const volatility = Number(indicators.volatility_14);
+  const recentReturn = Number(indicators.return_10);
+  const range10 = Number(indicators.range_10);
+
+  const points = [];
+  const v = (x) => Number(x).toFixed(4);
+
+  // RSI explanation
+  if (Number.isFinite(rsi)) {
+    if (rsi < 30) {
+      points.push(
+        `RSI is low (${v(rsi)}), indicating the stock is in an oversold region, which may suggest a potential rebound.`
+      );
+    } else if (rsi < 40) {
+      points.push(
+        `RSI is slightly low (${v(rsi)}), suggesting mild oversold conditions and a possible upward correction.`
+      );
+    } else if (rsi <= 60) {
+      points.push(
+        `RSI is neutral (${v(rsi)}), indicating balanced momentum without strong directional bias.`
+      );
+    } else if (rsi <= 70) {
+      points.push(
+        `RSI is slightly high (${v(rsi)}), suggesting mild overbought conditions.`
+      );
+    } else {
+      points.push(
+        `RSI is high (${v(rsi)}), indicating overbought conditions and a potential pullback.`
+      );
+    }
+  }
+
+  // Trend ratio explanation
+  if (Number.isFinite(trendRatio)) {
+    if (trendRatio < 0.95) {
+      points.push(
+        `Trend ratio is low (${v(trendRatio)}), indicating weak momentum and a lack of strong directional movement.`
+      );
+    } else if (trendRatio <= 1.05) {
+      points.push(
+        `Trend ratio is near neutral (${v(trendRatio)}), suggesting sideways movement with no clear trend.`
+      );
+    } else {
+      points.push(
+        `Trend ratio is high (${v(trendRatio)}), indicating strong upward momentum.`
+      );
+    }
+  }
+
+  // EMA50 distance explanation
+  if (Number.isFinite(emaDistance)) {
+    if (emaDistance < 0) {
+      points.push(
+        `Price is below EMA50 (${v(emaDistance)}), suggesting bearish positioning relative to recent average price.`
+      );
+    } else if (emaDistance > 0) {
+      points.push(
+        `Price is above EMA50 (${v(emaDistance)}), indicating bullish positioning.`
+      );
+    }
+  }
+
+  // Volatility explanation
+  if (Number.isFinite(volatility)) {
+    if (volatility > 0.02) {
+      points.push(
+        `Volatility is relatively high (${v(volatility)}), indicating larger price swings and higher risk.`
+      );
+    } else {
+      points.push(
+        `Volatility is low (${v(volatility)}), suggesting stable price movement.`
+      );
+    }
+  }
+
+  // Return explanation
+  if (Number.isFinite(recentReturn)) {
+    if (recentReturn < 0) {
+      points.push(
+        `Recent returns are negative (${v(recentReturn)}), indicating short-term weakness in price.`
+      );
+    } else if (recentReturn > 0) {
+      points.push(
+        `Recent returns are positive (${v(recentReturn)}), indicating short-term strength.`
+      );
+    }
+  }
+
+  // Range explanation
+  if (Number.isFinite(range10)) {
+    // Practical threshold for current universe: larger than 100 indicates wider swings.
+    if (range10 > 100) {
+      points.push(
+        `Price range is wide (${v(range10)}), indicating strong price movement over recent sessions.`
+      );
+    } else {
+      points.push(
+        `Price range is narrow (${v(range10)}), suggesting limited price movement.`
+      );
+    }
+  }
+
+  if (!points.length) {
+    featuresEl.innerHTML = `<div class="muted">Not enough indicator data for explanation.</div>`;
+    return;
+  }
+
+  featuresEl.innerHTML = `<ul class="feature-points">${points
+    .map((point) => `<li>${point}</li>`)
+    .join("")}</ul>`;
+}
+
+async function fetchNews(symbol) {
+  const newsEl = document.getElementById("news");
+  if (!newsEl) return;
+
+  try {
+    const url = `http://127.0.0.1:8000/api/news?symbol=${encodeURIComponent(symbol)}`;
+    console.log("[fetchNews] Calling URL:", url);
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok || !Array.isArray(data)) {
+      throw new Error("Failed to fetch news");
+    }
+
+    if (!data.length) {
+      newsEl.innerHTML = `<div class="muted">No news found.</div>`;
+      return;
+    }
+
+    newsEl.innerHTML = "";
+    data.forEach((item) => {
+      const title = item.title ?? "";
+      const source = item.source ?? "";
+      const publishedAt = item.published_at ?? "";
+      const itemUrl = item.url ?? "";
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "news-item";
+      wrapper.innerHTML = `
+        <div class="news-title">
+          <a href="${itemUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
+        </div>
+        <div class="news-meta">${source}${publishedAt ? " • " + publishedAt : ""}</div>
+      `;
+
+      newsEl.appendChild(wrapper);
+    });
+  } catch (error) {
+    console.error("[fetchNews] Request failed:", error);
+    newsEl.innerHTML = `<div class="muted">Unable to load news.</div>`;
   }
 }
 
@@ -341,11 +506,13 @@ function setStockTitleFromUrl() {
   if (!stockTitleEl) return;
   const params = new URLSearchParams(window.location.search);
   const symbol = (params.get("symbol") || "").trim();
+  console.log("[setStockTitleFromUrl] symbol:", symbol);
   stockTitleEl.textContent = symbol ? `Stock: ${symbol}` : "Stock: -";
   if (symbol) {
     fetchPrediction(symbol);
     fetchChartData(symbol);
-    fetchIndicators(symbol);
+    Promise.resolve().then(() => fetchIndicators(symbol));
+    Promise.resolve().then(() => fetchNews(symbol));
   }
 }
 

@@ -22,10 +22,11 @@ def indicators_view(request):
             "rsi_14",
             "atr_14",
             "volatility_14",
+            "volatility_ratio",
+            "return_10",
             "trend_ratio",
             "ema50_distance",
             "range_10",
-            "bollinger_position",
         )
         .first()
     )

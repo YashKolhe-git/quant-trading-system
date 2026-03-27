@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from market_data.views import ohlcv_view
+from market_data.views import ohlcv_view, news_view
 from technical_features.views import indicators_view
 
 urlpatterns = [
@@ -24,4 +24,5 @@ urlpatterns = [
     path("api/", include("ml_dataset.urls")),
     path("api/ohlcv", ohlcv_view),
     path("api/indicators", indicators_view),
+    path("api/news", news_view),
 ]
